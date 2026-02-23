@@ -62,7 +62,7 @@ const THEMES = [
   }
 ];
 
-// Pre-generate nodes for the background so they don't jump around when typing
+// Reverted back to the Neural Network generation for the Canvas
 const generateNodes = (count, width, height) => {
   const nodes = [];
   for (let i = 0; i < count; i++) {
@@ -77,6 +77,18 @@ const generateNodes = (count, width, height) => {
 };
 
 const CODE_SNIPPETS = ['< />', '{ }', '[ ]', 'AI', '() =>', 'SELECT *', 'import ai'];
+
+const JOB_ICONS = [
+  (props) => <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>, // Code / Full Stack
+  (props) => <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>, // Briefcase / Manager
+  (props) => <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>, // Database / Backend
+  (props) => <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>, // Server / DevOps
+  (props) => <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>, // Cloud / Architect
+  (props) => <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="m2 2 7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>, // PenTool / UI-UX
+  (props) => <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>, // Smartphone / Mobile
+  (props) => <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>, // Shield / Cybersecurity
+  (props) => <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg> // BarChart / Data Science
+];
 
 // Helper to make API calls to Gemini securely
 const fetchGemini = async (prompt, schema) => {
@@ -142,6 +154,9 @@ export default function App() {
   const [isGeneratingSnippets, setIsGeneratingSnippets] = useState(false);
   const [apiError, setApiError] = useState('');
 
+  // Website Background Icons State
+  const [bgIcons, setBgIcons] = useState([]);
+
   // We keep the nodes in a ref so they remain consistent across typing re-renders
   const nodesRef = useRef([]);
 
@@ -149,7 +164,22 @@ export default function App() {
   const height = 396; // Standard LinkedIn Cover Height
 
   useEffect(() => {
-    // Initialize random nodes/watermarks only once or on manual refresh
+    // Generate the website background icon elements
+    const generatedBg = [];
+    for (let i = 0; i < 50; i++) {
+      generatedBg.push({
+        id: i,
+        Icon: JOB_ICONS[Math.floor(Math.random() * JOB_ICONS.length)],
+        top: `${Math.random() * 110 - 5}%`, // Allow slight overflow
+        left: `${Math.random() * 110 - 5}%`,
+        angle: Math.random() * 360, 
+        size: Math.random() * 40 + 20, // 20px to 60px
+        opacity: Math.random() * 0.04 + 0.02, // 0.02 to 0.06 opacity
+      });
+    }
+    setBgIcons(generatedBg);
+
+    // Initialize random canvas nodes only once or on manual refresh
     nodesRef.current = generateNodes(120, width, height);
     drawCanvas();
   }, []);
@@ -251,6 +281,7 @@ export default function App() {
     ctx.fillStyle = `rgba(${theme.watermarkColor}, ${watermarkOpacity / 100})`;
     ctx.font = 'bold 120px monospace';
     ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic'; // reset from previous graffiti state just in case
     
     // Place generated code snippets randomly based on the fixed positions
     ctx.fillText(codeSnippets[0] || '< />', width * 0.8, height * 0.4);
@@ -323,21 +354,53 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 p-3 sm:p-4 md:p-8 font-sans">
-      <div className="max-w-6xl mx-auto space-y-6 sm:space-y-8">
+    <>
+      <style>
+        {`
+          @import url('https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap');
+          .font-ubuntu { font-family: 'Ubuntu', sans-serif; }
+        `}
+      </style>
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-sky-50 text-gray-900 p-3 sm:p-4 md:p-8 font-ubuntu relative z-0 overflow-hidden">
         
-        <header className="text-center space-y-2">
-          <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight">
-            LinkedIn Cover Generator
-          </h1>
-          <p className="text-gray-600">
-            Tailored for Full Stack Developers & AI Enthusiasts. Adjust your details and export.
-          </p>
-        </header>
+        {/* Dynamic Website Background Icons */}
+        <div className="fixed inset-0 pointer-events-none z-[-1] overflow-hidden selection:bg-transparent">
+          {bgIcons.map(iconData => {
+            const Icon = iconData.Icon;
+            return (
+              <div 
+                key={iconData.id} 
+                className="absolute text-blue-900"
+                style={{
+                  top: iconData.top,
+                  left: iconData.left,
+                  transform: `translate(-50%, -50%) rotate(${iconData.angle}deg)`,
+                  opacity: iconData.opacity,
+                }}
+              >
+                <Icon style={{ width: iconData.size, height: iconData.size }} />
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="max-w-6xl mx-auto space-y-6 sm:space-y-8 relative z-10">
+          
+          <header className="text-center space-y-2 pt-4">
+            <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight">
+              LinkedIn Cover Generator
+            </h1>
+            <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">
+              Stand Out on LinkedIn in 30 Seconds
+            </h1>
+            <p className="text-gray-600 bg-white/50 inline-block px-4 py-1 rounded-full backdrop-blur-sm border border-gray-200/50">
+              AI-generated LinkedIn covers customized for developers, marketers, designers, entrepreneurs, and every profession in between.
+            </p>
+          </header>
 
         {/* Canvas Preview Section */}
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200">
-          <div className="bg-gray-100 px-4 py-3 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200 backdrop-blur-sm">
+          <div className="bg-gray-100/90 px-4 py-3 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
             <span className="text-sm font-semibold text-gray-600 uppercase tracking-wider">Preview (1584 x 396)</span>
             <button 
               onClick={downloadImage}
@@ -348,7 +411,7 @@ export default function App() {
             </button>
           </div>
           
-          <div className="p-4 md:p-8 flex justify-center bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-gray-50">
+          <div className="p-4 md:p-8 flex justify-center bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-gray-50/50">
             {/* The canvas renders internally at 1584x396 for high quality output, 
               but scales down via CSS to fit the user's screen.
             */}
@@ -374,10 +437,10 @@ export default function App() {
         </div>
 
         {/* Controls Section */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pb-12">
           
           {/* Text Inputs */}
-          <div className="col-span-1 md:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-200 p-6 space-y-4">
+          <div className="col-span-1 md:col-span-2 bg-white/95 backdrop-blur-md rounded-2xl shadow-sm border border-gray-200 p-6 space-y-4">
             <div className="flex items-center justify-between border-b pb-2">
               <h2 className="flex items-center gap-2 text-lg font-bold text-gray-800">
                 <Type size={20} className="text-blue-500"/> Typography & Tech Stack
@@ -480,7 +543,7 @@ export default function App() {
           </div>
 
           {/* Design Settings */}
-          <div className="col-span-1 bg-white rounded-2xl shadow-sm border border-gray-200 p-6 space-y-6">
+          <div className="col-span-1 bg-white/95 backdrop-blur-md rounded-2xl shadow-sm border border-gray-200 p-6 space-y-6">
             <h2 className="flex items-center gap-2 text-lg font-bold text-gray-800 border-b pb-2">
               <Settings size={20} className="text-purple-500"/> Design
             </h2>
@@ -566,5 +629,6 @@ export default function App() {
 
       </div>
     </div>
+    </>
   );
 }
